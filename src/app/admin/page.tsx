@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Button from "@/components/Button";
+import Card from "@/components/Card";
+import Input from "@/components/Input";
 
 type Driver = {
   id: string;
@@ -134,107 +137,133 @@ export default function AdminDashboard() {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
-      <div className="w-8 h-8 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center">
+        <div className="relative w-12 h-12">
+          <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-4 text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Synchronizing Data</p>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <nav className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-50/50 bg-grid-pattern">
+      <nav className="glass border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-40">
         <div className="flex items-center gap-6">
           <img 
             src="https://nextbharat.ventures/wp-content/uploads/2024/04/Frame-159788503034-1.png" 
             alt="Next Bharat" 
-            className="h-10 w-auto"
+            className="h-8 w-auto"
           />
-          <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
-          <h1 className="text-xl font-bold tracking-tight text-gray-900">Admin Dashboard</h1>
+          <div className="h-6 w-[1px] bg-gray-200 hidden md:block"></div>
+          <h1 className="text-sm font-black uppercase tracking-widest text-gray-900 hidden md:block">Control Center</h1>
         </div>
-        <button 
-          onClick={async () => {
-            await fetch("/api/admin/auth", { method: "DELETE" });
-            router.push("/admin/login");
-          }}
-          className="text-sm text-gray-500 hover:text-red-600 font-semibold transition-colors px-4 py-2 rounded-md hover:bg-red-50"
-        >
-          Logout
-        </button>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={fetchData}
+            className="p-2 text-gray-400 hover:text-black transition-colors"
+            title="Refresh Data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+          </button>
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              await fetch("/api/admin/auth", { method: "DELETE" });
+              router.push("/admin/login");
+            }}
+          >
+            Exit
+          </Button>
+        </div>
       </nav>
 
-      <div className="p-8 max-w-7xl mx-auto space-y-8">
+      <main className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Stats Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[
-            { label: "Total Drivers", value: drivers.length, color: "blue" },
-            { label: "Active Shifts", value: drivers.filter(d => d.status === "ACTIVE").length, color: "green" },
-            { label: "Total Users", value: users.length, color: "purple" },
-            { label: "Total Vehicles", value: vehicles.length, color: "orange" },
+            { label: "Total Drivers", value: drivers.length, icon: "👤" },
+            { label: "Active Shifts", value: drivers.filter(d => d.status === "ACTIVE").length, icon: "⚡" },
+            { label: "Total Users", value: users.length, icon: "🏢" },
+            { label: "Fleet Size", value: vehicles.length, icon: "🚛" },
           ].map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-              <p className="text-xs font-bold uppercase text-gray-400 tracking-wider mb-1">{stat.label}</p>
-              <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-            </div>
+            <Card key={i} variant="elevated" className="relative overflow-hidden group hover:border-black transition-all">
+              <div className="absolute -right-4 -top-4 text-4xl opacity-5 group-hover:opacity-10 transition-opacity">{stat.icon}</div>
+              <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-2">{stat.label}</p>
+              <p className="text-3xl font-black text-gray-900">{stat.value}</p>
+            </Card>
           ))}
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="flex gap-8 px-6 pt-6 border-b border-gray-100 overflow-x-auto">
+        <Card variant="elevated" className="overflow-hidden p-0 border-none shadow-strong">
+          <div className="flex flex-wrap gap-4 md:gap-8 px-6 pt-6 border-b border-gray-100 bg-white">
             {["drivers", "users", "vehicles", "records"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-4 px-2 capitalize text-sm font-semibold transition-all relative ${
+                className={`pb-4 px-2 capitalize text-[10px] font-black tracking-widest uppercase transition-all relative ${
                   activeTab === tab 
-                    ? "text-blue-600" 
+                    ? "text-black" 
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
                 {tab}
-                {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"></div>}
+                {activeTab === tab && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-black rounded-t-full animate-in slide-in-from-bottom-1"></div>
+                )}
               </button>
             ))}
           </div>
 
-          <div className="p-6">
+          <div className="p-6 bg-white min-h-[400px]">
             {activeTab === "drivers" && (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-                      <th className="px-4 py-3 pb-4">Name</th>
-                      <th className="px-4 py-3 pb-4">Phone</th>
-                      <th className="px-4 py-3 pb-4">Status</th>
-                      <th className="px-4 py-3 pb-4 text-center">Verified</th>
-                      <th className="px-4 py-3 pb-4 text-right">Action</th>
+                    <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50">
+                      <th className="px-4 py-4">Identity</th>
+                      <th className="px-4 py-4">Contact</th>
+                      <th className="px-4 py-4">Operation Status</th>
+                      <th className="px-4 py-4 text-center">Auth</th>
+                      <th className="px-4 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {drivers.map((d) => (
-                      <tr key={d.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-4 font-medium text-gray-900">{d.name}</td>
-                        <td className="px-4 py-4 text-gray-500">{d.phone}</td>
-                        <td className="px-4 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      <tr key={d.id} className="group hover:bg-gray-50/50 transition-colors">
+                        <td className="px-4 py-5 font-bold text-gray-900">{d.name}</td>
+                        <td className="px-4 py-5 text-sm text-gray-500 font-medium">{d.phone}</td>
+                        <td className="px-4 py-5">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
                             d.status === "ACTIVE" 
-                              ? "bg-green-100 text-green-700" 
-                              : "bg-gray-100 text-gray-500"
+                              ? "bg-green-50 text-green-700 border border-green-100" 
+                              : "bg-gray-50 text-gray-400 border border-gray-100"
                           }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${d.status === "ACTIVE" ? "bg-green-500 animate-pulse" : "bg-gray-300"}`}></span>
                             {d.status}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-center text-xl">{d.isVerified ? "✅" : "❌"}</td>
-                        <td className="px-4 py-4 text-right">
-                          <button 
+                        <td className="px-4 py-5 text-center">
+                          {d.isVerified ? (
+                            <span className="text-green-500 text-lg">●</span>
+                          ) : (
+                            <span className="text-red-500 text-lg">○</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-5 text-right">
+                          <Button 
+                            variant={d.isVerified ? "outline" : "primary"}
+                            size="sm"
                             onClick={() => toggleVerify(d.id, d.isVerified)}
-                            className={`text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-md transition-colors ${
-                              d.isVerified 
-                                ? "bg-red-50 text-red-600 hover:bg-red-100" 
-                                : "bg-green-50 text-green-600 hover:bg-green-100"
-                            }`}
+                            className="text-[9px]"
                           >
-                            {d.isVerified ? "Unverify" : "Verify"}
-                          </button>
+                            {d.isVerified ? "Revoke" : "Authorize"}
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -245,51 +274,51 @@ export default function AdminDashboard() {
 
             {activeTab === "users" && (
               <div className="space-y-8">
-                <form onSubmit={addUser} className="bg-gray-50 p-6 rounded-xl flex gap-4 items-end max-w-4xl border border-gray-100">
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-2 tracking-wider">User Full Name</label>
-                    <input 
-                      className="w-full border-gray-200 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
-                      value={newUserName} 
-                      onChange={e => setNewUserName(e.target.value)} 
-                      required
-                      placeholder="e.g. Ronit Roy"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-2 tracking-wider">Email Address</label>
-                    <input 
-                      type="email"
-                      className="w-full border-gray-200 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
-                      value={newUserEmail} 
-                      onChange={e => setNewUserEmail(e.target.value)} 
-                      required
-                      placeholder="ronit@example.com"
-                    />
-                  </div>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold text-sm transition-all shadow-sm">Add User</button>
-                </form>
+                <Card variant="flat" className="bg-gray-50/50 border-dashed border-2">
+                  <form onSubmit={addUser} className="flex flex-col md:flex-row gap-6 items-end">
+                    <div className="flex-1 w-full">
+                      <Input 
+                        label="Collaborator Name"
+                        value={newUserName} 
+                        onChange={e => setNewUserName(e.target.value)} 
+                        required
+                        placeholder="Full name"
+                      />
+                    </div>
+                    <div className="flex-1 w-full">
+                      <Input 
+                        type="email"
+                        label="Official Email"
+                        value={newUserEmail} 
+                        onChange={e => setNewUserEmail(e.target.value)} 
+                        required
+                        placeholder="email@organization.com"
+                      />
+                    </div>
+                    <Button type="submit" size="md" className="w-full md:w-auto">Register User</Button>
+                  </form>
+                </Card>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-t border-gray-50">
+                  <table className="w-full text-left">
                     <thead>
-                      <tr className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-                        <th className="px-4 py-6">Name</th>
-                        <th className="px-4 py-6">Email</th>
-                        <th className="px-4 py-6 text-right">Action</th>
+                      <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50">
+                        <th className="px-4 py-4">Name</th>
+                        <th className="px-4 py-4">Email Address</th>
+                        <th className="px-4 py-4 text-right">Management</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {users.map((u) => (
                         <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-4 py-4 font-medium text-gray-900">{u.name}</td>
-                          <td className="px-4 py-4 text-gray-500">{u.email}</td>
-                          <td className="px-4 py-4 text-right">
+                          <td className="px-4 py-5 font-bold text-gray-900">{u.name}</td>
+                          <td className="px-4 py-5 text-sm text-gray-500 font-medium">{u.email}</td>
+                          <td className="px-4 py-5 text-right">
                             <button 
                               onClick={() => deleteUser(u.id)}
-                              className="text-[10px] font-bold uppercase text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition-all"
+                              className="text-[10px] font-black uppercase text-red-500 hover:text-red-700 hover:underline tracking-widest transition-all"
                             >
-                              Delete
+                              Purge
                             </button>
                           </td>
                         </tr>
@@ -302,38 +331,39 @@ export default function AdminDashboard() {
 
             {activeTab === "vehicles" && (
               <div className="space-y-8">
-                <form onSubmit={addVehicle} className="bg-gray-50 p-6 rounded-xl flex gap-4 items-end max-w-md border border-gray-100">
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-2 tracking-wider">Vehicle Number</label>
-                    <input 
-                      className="w-full border-gray-200 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
-                      value={newVehicleNumber} 
-                      onChange={e => setNewVehicleNumber(e.target.value)} 
-                      required
-                      placeholder="KA 01 AB 1234"
-                    />
-                  </div>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold text-sm transition-all shadow-sm">Add</button>
-                </form>
+                <Card variant="flat" className="bg-gray-50/50 border-dashed border-2 max-w-md">
+                  <form onSubmit={addVehicle} className="flex gap-6 items-end">
+                    <div className="flex-1">
+                      <Input 
+                        label="Vehicle Identifier"
+                        value={newVehicleNumber} 
+                        onChange={e => setNewVehicleNumber(e.target.value)} 
+                        required
+                        placeholder="Registration Number"
+                      />
+                    </div>
+                    <Button type="submit" size="md">Add Unit</Button>
+                  </form>
+                </Card>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-t border-gray-50">
+                  <table className="w-full text-left">
                     <thead>
-                      <tr className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-                        <th className="px-4 py-6">Vehicle Number</th>
-                        <th className="px-4 py-6 text-right">Action</th>
+                      <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50">
+                        <th className="px-4 py-4">Registration Number</th>
+                        <th className="px-4 py-4 text-right">Management</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {vehicles.map((v) => (
                         <tr key={v.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-4 py-4 font-medium text-gray-900">{v.vehicleNumber}</td>
-                          <td className="px-4 py-4 text-right">
+                          <td className="px-4 py-5 font-mono font-bold text-gray-900 tracking-tight">{v.vehicleNumber}</td>
+                          <td className="px-4 py-5 text-right">
                             <button 
                               onClick={() => deleteVehicle(v.id)}
-                              className="text-[10px] font-bold uppercase text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md transition-all"
+                              className="text-[10px] font-black uppercase text-red-500 hover:text-red-700 hover:underline tracking-widest transition-all"
                             >
-                              Delete
+                              Remove
                             </button>
                           </td>
                         </tr>
@@ -348,30 +378,36 @@ export default function AdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-                      <th className="px-4 py-3 pb-6">Time</th>
-                      <th className="px-4 py-3 pb-6">Driver</th>
-                      <th className="px-4 py-3 pb-6">User</th>
-                      <th className="px-4 py-3 pb-6">Vehicle</th>
-                      <th className="px-4 py-3 pb-6">Type</th>
-                      <th className="px-4 py-3 pb-6 text-right">Odometer</th>
+                    <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50">
+                      <th className="px-4 py-4">Timestamp</th>
+                      <th className="px-4 py-4">Driver</th>
+                      <th className="px-4 py-4">Client</th>
+                      <th className="px-4 py-4">Unit</th>
+                      <th className="px-4 py-4">Event</th>
+                      <th className="px-4 py-4 text-right">Gauge</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {records.map((r) => (
                       <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-4 text-sm text-gray-500">{new Date(r.timestamp).toLocaleString()}</td>
-                        <td className="px-4 py-4 font-medium text-gray-900">{r.driver.name}</td>
-                        <td className="px-4 py-4 text-sm text-gray-600">{r.clientUser?.name || "-"}</td>
-                        <td className="px-4 py-4 text-sm text-gray-600">{r.vehicle?.vehicleNumber || "-"}</td>
-                        <td className="px-4 py-4">
-                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                            r.type === "IN" ? "bg-blue-50 text-blue-700" : "bg-orange-50 text-orange-700"
+                        <td className="px-4 py-5 text-[10px] font-bold text-gray-400">
+                          {new Date(r.timestamp).toLocaleDateString()}
+                          <br />
+                          <span className="text-gray-900">{new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </td>
+                        <td className="px-4 py-5 font-bold text-gray-900">{r.driver.name}</td>
+                        <td className="px-4 py-5 text-sm text-gray-600 font-medium">{r.clientUser?.name || "-"}</td>
+                        <td className="px-4 py-5 font-mono text-sm text-gray-600">{r.vehicle?.vehicleNumber || "-"}</td>
+                        <td className="px-4 py-5">
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                            r.type === "IN" 
+                              ? "bg-blue-50 text-blue-700 border-blue-100" 
+                              : "bg-orange-50 text-orange-700 border-orange-100"
                           }`}>
-                            {r.type}
+                            {r.type === "IN" ? "Start" : "End"}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-right font-mono text-sm text-gray-900">{r.odometer}</td>
+                        <td className="px-4 py-5 text-right font-mono font-black text-gray-900">{r.odometer}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -379,8 +415,8 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </Card>
+      </main>
     </div>
   );
 }
