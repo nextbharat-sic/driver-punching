@@ -9,26 +9,44 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
+model Driver {
   id           String        @id @default(uuid())
   name         String
   phone        String        @unique
-  status       UserStatus    @default(IDLE)
+  isVerified   Boolean       @default(false)
+  status       DriverStatus  @default(IDLE)
   punchRecords PunchRecord[]
 }
 
-model PunchRecord {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  type      PunchType
-  odometer  Float
-  latitude  Float
-  longitude Float
-  timestamp DateTime  @default(now())
+model ClientUser {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  punchRecords PunchRecord[]
 }
 
-enum UserStatus {
+model Vehicle {
+  id            String        @id @default(uuid())
+  vehicleNumber String        @unique
+  punchRecords  PunchRecord[]
+}
+
+model PunchRecord {
+  id           String      @id @default(uuid())
+  driverId     String
+  driver       Driver      @relation(fields: [driverId], references: [id])
+  clientUserId String?
+  clientUser   ClientUser? @relation(fields: [clientUserId], references: [id])
+  vehicleId    String?
+  vehicle      Vehicle?    @relation(fields: [vehicleId], references: [id])
+  type         PunchType
+  odometer     Float
+  latitude     Float
+  longitude    Float
+  timestamp    DateTime    @default(now())
+}
+
+enum DriverStatus {
   IDLE
   ACTIVE
 }

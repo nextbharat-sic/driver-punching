@@ -39,11 +39,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full bg-gray-50`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}
       >
-        <main className="max-w-md mx-auto h-full bg-white shadow-lg overflow-auto">
+        <div className="h-full overflow-auto">
           {children}
-        </main>
+        </div>
       </body>
     </html>
   );

@@ -13,25 +13,27 @@ export async function POST(request: Request) {
   }
 
   try {
-    let user = await prisma.user.findUnique({
+    let driver = await prisma.driver.findUnique({
       where: { phone },
     });
 
-    if (!user) {
-      user = await prisma.user.create({
-        data: { name, phone },
+    let isNew = false;
+    if (!driver) {
+      driver = await prisma.driver.create({
+        data: { name, phone, isVerified: false },
       });
+      isNew = true;
     }
 
     const cookieStore = await cookies();
-    cookieStore.set("userId", user.id, {
+    cookieStore.set("driverId", driver.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: "/",
     });
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ driver, isNew });
   } catch (error) {
     console.error("Auth error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
