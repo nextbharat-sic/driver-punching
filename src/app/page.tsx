@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 
 type User = {
   id: string;
@@ -86,7 +85,7 @@ export default function Home() {
           } else {
             setError(data.error || "Punch failed");
           }
-        } catch (err) {
+        } catch {
           setError("Network error. Please try again.");
         } finally {
           setPunching(false);
