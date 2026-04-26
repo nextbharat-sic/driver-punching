@@ -220,9 +220,11 @@ export default function Home() {
     } catch (err: any) {
       console.error("[DEBUG] confirmPunch: caught error", err);
       let msg = "Shift update failed.";
-      if (err.code === 1) msg = "Location access denied. Please enable GPS in your browser settings.";
-      else if (err.code === 2) msg = "Location position unavailable.";
-      else if (err.code === 3) msg = "Location request timed out.";
+      if (err.code === 1) {
+        msg = "Location permission denied. Please click the 'Lock' icon in your browser address bar and set Location to 'Allow', then try again.";
+      }
+      else if (err.code === 2) msg = "Location position unavailable. Please ensure your device has GPS/Network location enabled.";
+      else if (err.code === 3) msg = "Location request timed out. Please try again or move to an open area.";
       else msg = err.message || "Network error. Please try again.";
       
       setError(msg);
@@ -391,20 +393,18 @@ export default function Home() {
               <Select 
                 label="Assignee User"
                 value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-              >
-                <option value="">Select individual...</option>
-                {clientUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </Select>
+                onChange={(val) => setSelectedUserId(val)}
+                options={clientUsers.map(u => ({ label: u.name, value: u.id }))}
+                placeholder="Select individual..."
+              />
 
               <Select 
                 label="Vehicle Unit"
                 value={selectedVehicleId}
-                onChange={(e) => setSelectedVehicleId(e.target.value)}
-              >
-                <option value="">Select vehicle...</option>
-                {vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber}</option>)}
-              </Select>
+                onChange={(val) => setSelectedVehicleId(val)}
+                options={vehicles.map(v => ({ label: v.vehicleNumber, value: v.id }))}
+                placeholder="Select vehicle..."
+              />
             </div>
           ) : (
             <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100 space-y-4 animate-in slide-in-from-right-4 duration-500">
