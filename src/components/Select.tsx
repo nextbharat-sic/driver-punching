@@ -32,7 +32,7 @@ const Select = ({
   const selectedOption = options.find((opt) => opt.value === value);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: Event) => {
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)

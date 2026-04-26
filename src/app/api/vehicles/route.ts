@@ -8,8 +8,17 @@ export async function GET() {
       orderBy: { vehicleNumber: "asc" },
     });
     return NextResponse.json({ vehicles });
-  } catch (error) {
-    console.error("Fetch vehicles error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Fetch vehicles error details:", error);
+
+    let userMessage = "Internal Server Error";
+    if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("127.0.0.1") || process.env.DATABASE_URL.includes("localhost")) {
+      userMessage = "Database Error: Valid DATABASE_URL not found. Please set it in Vercel environment variables.";
+    }
+
+    return NextResponse.json({ 
+      error: userMessage, 
+      details: error.message 
+    }, { status: 500 });
   }
 }
