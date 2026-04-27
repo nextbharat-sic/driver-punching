@@ -31,11 +31,11 @@ model Vehicle {
   vehicleNumber String        @unique
   punchRecords  PunchRecord[]
 }
+
 model PunchRecord {
   id           String      @id @default(uuid())
-  rideId       String?     @index
+  rideId       String?
   driverId     String
-...
   driver       Driver      @relation(fields: [driverId], references: [id])
   clientUserId String?
   clientUser   ClientUser? @relation(fields: [clientUserId], references: [id])
@@ -46,6 +46,8 @@ model PunchRecord {
   latitude     Float
   longitude    Float
   timestamp    DateTime    @default(now())
+
+  @@index([rideId])
 }
 
 enum DriverStatus {
