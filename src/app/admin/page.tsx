@@ -269,19 +269,21 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-4 py-5 text-center">
                           {d.deviceId ? (
-                            <div className="flex flex-col items-center gap-1">
-                              <span className="text-[9px] font-bold text-gray-900 uppercase tracking-tighter bg-gray-100 px-2 py-0.5 rounded">
-                                {d.deviceId.slice(0, 8)}...
-                              </span>
+                            <div className="flex flex-col items-center gap-2">
+                              <code className="text-[10px] font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded border border-gray-200">
+                                {d.deviceId.slice(0, 8)}
+                              </code>
                               <button 
                                 onClick={() => resetDevice(d.id)}
-                                className="text-[8px] font-black text-red-500 uppercase hover:underline"
+                                className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-all"
                               >
-                                Reset
+                                Reset Binding
                               </button>
                             </div>
                           ) : (
-                            <span className="text-[9px] font-bold text-gray-300 uppercase italic">Unbound</span>
+                            <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest italic bg-gray-50 px-2 py-1 rounded">
+                              Unbound
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-5 text-right">
