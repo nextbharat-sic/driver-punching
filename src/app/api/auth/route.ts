@@ -49,7 +49,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ driver });
   } catch (error: any) {
-...
     console.error("Auth error details:", error);
 
     let userMessage = "Internal Server Error";
