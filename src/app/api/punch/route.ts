@@ -47,10 +47,51 @@ export async function POST(request: Request) {
       }
     }
 
+    // Handle automated calculations for Shift End
+    let totalKms = 0;
+    let totalHrs = "0";
+    let startOdo = 0;
+    let startTime = "";
+    let endOdo = 0;
+    let endTime = "";
+    let rideId = "";
+
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const currentIst = new Date(new Date().getTime() + istOffset).toISOString().split('T')[1].slice(0, 5);
+
+    if (type === "IN") {
+      startOdo = parseFloat(odometer);
+      startTime = currentIst;
+      rideId = crypto.randomUUID();
+    } else {
+      const startRecord = await prisma.punchRecord.findFirst({
+        where: { 
+          driverId, 
+          type: "IN",
+          vehicleId: vehicleId || null 
+        },
+        orderBy: { timestamp: "desc" }
+      });
+
+      if (startRecord) {
+        startOdo = startRecord.odometer;
+        startTime = new Date(new Date(startRecord.timestamp).getTime() + istOffset).toISOString().split('T')[1].slice(0, 5);
+        rideId = startRecord.rideId || "";
+        
+        endOdo = parseFloat(odometer);
+        endTime = currentIst;
+        
+        totalKms = endOdo - startOdo;
+        const durationMs = new Date().getTime() - new Date(startRecord.timestamp).getTime();
+        totalHrs = (durationMs / (1000 * 60 * 60)).toFixed(2);
+      }
+    }
+
     // Create Punch Record
     const punchRecord = await prisma.punchRecord.create({
       data: {
         driverId,
+        rideId,
         clientUserId: clientUserId || null,
         vehicleId: vehicleId || null,
         type,
@@ -72,43 +113,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // Handle automated calculations for Shift End
-    let totalKms = 0;
-    let totalHrs = "0";
-    let startOdo = 0;
-    let startTime = "";
-    let endOdo = 0;
-    let endTime = "";
-
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const currentIst = new Date(new Date().getTime() + istOffset).toISOString().split('T')[1].slice(0, 5);
-
-    if (type === "IN") {
-      startOdo = parseFloat(odometer);
-      startTime = currentIst;
-    } else {
-      const startRecord = await prisma.punchRecord.findFirst({
-        where: { 
-          driverId, 
-          type: "IN",
-          vehicleId: vehicleId || null 
-        },
-        orderBy: { timestamp: "desc" }
-      });
-
-      if (startRecord) {
-        startOdo = startRecord.odometer;
-        startTime = new Date(new Date(startRecord.timestamp).getTime() + istOffset).toISOString().split('T')[1].slice(0, 5);
-        
-        endOdo = parseFloat(odometer);
-        endTime = currentIst;
-        
-        totalKms = endOdo - startOdo;
-        const durationMs = new Date().getTime() - new Date(startRecord.timestamp).getTime();
-        totalHrs = (durationMs / (1000 * 60 * 60)).toFixed(2);
-      }
-    }
-
     // Trigger n8n for both shift start and shift end
     if (punchRecord.clientUser && punchRecord.vehicle) {
       try {
@@ -126,6 +130,7 @@ export async function POST(request: Request) {
           startTime,
           endOdo: type === "OUT" ? endOdo : undefined,
           endTime: type === "OUT" ? endTime : undefined,
+          rideId,
         });
       } catch (err) {
         console.error("Failed to trigger n8n:", err);

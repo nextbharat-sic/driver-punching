@@ -31,10 +31,11 @@ model Vehicle {
   vehicleNumber String        @unique
   punchRecords  PunchRecord[]
 }
-
 model PunchRecord {
   id           String      @id @default(uuid())
+  rideId       String?     @index
   driverId     String
+...
   driver       Driver      @relation(fields: [driverId], references: [id])
   clientUserId String?
   clientUser   ClientUser? @relation(fields: [clientUserId], references: [id])

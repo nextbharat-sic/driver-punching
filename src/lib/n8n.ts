@@ -12,6 +12,7 @@ export async function triggerN8nEmail(data: {
   startTime?: string;
   endOdo?: number;
   endTime?: string;
+  rideId?: string;
 }) {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   if (!webhookUrl) {
