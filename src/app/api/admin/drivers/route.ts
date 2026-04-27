@@ -29,10 +29,15 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { id, isVerified } = await request.json();
+    const { id, isVerified, deviceId } = await request.json();
+    
+    const data: any = {};
+    if (isVerified !== undefined) data.isVerified = isVerified;
+    if (deviceId !== undefined) data.deviceId = deviceId;
+
     const driver = await prisma.driver.update({
       where: { id },
-      data: { isVerified },
+      data,
     });
     return NextResponse.json({ driver });
   } catch (error) {

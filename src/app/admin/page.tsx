@@ -12,6 +12,7 @@ type Driver = {
   phone: string;
   isVerified: boolean;
   status: string;
+  deviceId: string | null;
 };
 
 type ClientUser = {
@@ -88,6 +89,16 @@ export default function AdminDashboard() {
     await fetch("/api/admin/drivers", {
       method: "PATCH",
       body: JSON.stringify({ id, isVerified: !current }),
+      headers: { "Content-Type": "application/json" },
+    });
+    fetchData();
+  };
+
+  const resetDevice = async (id: string) => {
+    if (!confirm("Are you sure you want to unbind this device? The driver will be able to log in on a new phone.")) return;
+    await fetch("/api/admin/drivers", {
+      method: "PATCH",
+      body: JSON.stringify({ id, deviceId: null }),
       headers: { "Content-Type": "application/json" },
     });
     fetchData();
@@ -230,6 +241,7 @@ export default function AdminDashboard() {
                       <th className="px-4 py-4">Contact</th>
                       <th className="px-4 py-4">Operation Status</th>
                       <th className="px-4 py-4 text-center">Auth</th>
+                      <th className="px-4 py-4 text-center">Device</th>
                       <th className="px-4 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -253,6 +265,23 @@ export default function AdminDashboard() {
                             <span className="text-green-500 text-lg">●</span>
                           ) : (
                             <span className="text-red-500 text-lg">○</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-5 text-center">
+                          {d.deviceId ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-[9px] font-bold text-gray-900 uppercase tracking-tighter bg-gray-100 px-2 py-0.5 rounded">
+                                {d.deviceId.slice(0, 8)}...
+                              </span>
+                              <button 
+                                onClick={() => resetDevice(d.id)}
+                                className="text-[8px] font-black text-red-500 uppercase hover:underline"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[9px] font-bold text-gray-300 uppercase italic">Unbound</span>
                           )}
                         </td>
                         <td className="px-4 py-5 text-right">

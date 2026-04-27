@@ -15,6 +15,7 @@ model Driver {
   phone        String        @unique
   isVerified   Boolean       @default(false)
   status       DriverStatus  @default(IDLE)
+  deviceId     String?
   punchRecords PunchRecord[]
 }
 

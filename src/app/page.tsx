@@ -42,6 +42,16 @@ export default function Home() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const getDeviceId = () => {
+    if (typeof window === "undefined") return "";
+    let id = localStorage.getItem("nb_device_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("nb_device_id", id);
+    }
+    return id;
+  };
+
   const [clientUsers, setClientUsers] = useState<ClientUser[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -89,14 +99,15 @@ export default function Home() {
     e.preventDefault();
     setError("");
     setLoginLoading(true);
+    const deviceId = getDeviceId();
     try {
       const res = await fetch("/api/auth", {
         method: "POST",
-        body: JSON.stringify({ name, phone }),
+        body: JSON.stringify({ name, phone, deviceId }),
         headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
-      if (data.driver) {
+      if (res.ok && data.driver) {
         if (!data.driver.isVerified) {
           setShowUnverifiedPopup(true);
         } else {
@@ -234,8 +245,8 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
-    document.cookie = "driverId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     window.location.reload();
   };
 

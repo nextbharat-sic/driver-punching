@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
-
 export async function POST(request: Request) {
-  const { name, phone } = await request.json();
+  const { name, phone, deviceId } = await request.json();
 
-  if (!name || !phone) {
+  if (!name || !phone || !deviceId) {
     return NextResponse.json(
-      { error: "Name and Phone are required" },
+      { error: "Name, Phone, and Device Identification are required" },
       { status: 400 }
     );
   }
@@ -17,12 +16,27 @@ export async function POST(request: Request) {
       where: { phone },
     });
 
-    let isNew = false;
-    if (!driver) {
+    if (driver) {
+      // Check for device binding
+      if (driver.deviceId && driver.deviceId !== deviceId) {
+        return NextResponse.json(
+          { error: "Device Mismatch: This account is bound to another phone. Please contact admin for reset." },
+          { status: 403 }
+        );
+      }
+
+      // If driver exists but no deviceId bound yet (first login after update)
+      if (!driver.deviceId) {
+        driver = await prisma.driver.update({
+          where: { id: driver.id },
+          data: { deviceId },
+        });
+      }
+    } else {
+      // Create new driver and bind deviceId immediately
       driver = await prisma.driver.create({
-        data: { name, phone, isVerified: false },
+        data: { name, phone, deviceId, isVerified: true },
       });
-      isNew = true;
     }
 
     const cookieStore = await cookies();
@@ -33,8 +47,9 @@ export async function POST(request: Request) {
       path: "/",
     });
 
-    return NextResponse.json({ driver, isNew });
+    return NextResponse.json({ driver });
   } catch (error: any) {
+...
     console.error("Auth error details:", error);
 
     let userMessage = "Internal Server Error";
