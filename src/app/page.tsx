@@ -266,7 +266,10 @@ export default function Home() {
     );
   }
 
-  if (showUnverifiedPopup) {
+  // Combined check for isVerified status
+  const isPendingVerification = showUnverifiedPopup || (driver && !driver.isVerified);
+
+  if (isPendingVerification) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 bg-grid-pattern">
         <Card variant="elevated" className="max-w-sm w-full text-center space-y-6">
@@ -279,9 +282,16 @@ export default function Home() {
               Your account is currently under review. Access will be granted once verified by our team.
             </p>
           </div>
-          <Button onClick={() => setShowUnverifiedPopup(false)} className="w-full">
-            Dismiss
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button onClick={() => {
+              setShowUnverifiedPopup(false);
+              if (driver && !driver.isVerified) {
+                handleLogout();
+              }
+            }} className="w-full" variant="outline">
+              Back to Login
+            </Button>
+          </div>
         </Card>
       </div>
     );

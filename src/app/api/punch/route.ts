@@ -74,14 +74,17 @@ export async function POST(request: Request) {
 
     // Trigger n8n email for shift start
     if (type === "IN" && punchRecord.clientUser && punchRecord.vehicle) {
-      // Run in background
-      triggerN8nEmail({
-        driverName: driver.name,
-        userName: punchRecord.clientUser.name,
-        userEmail: punchRecord.clientUser.email,
-        vehicleNumber: punchRecord.vehicle.vehicleNumber,
-        odometer: punchRecord.odometer,
-      }).catch(err => console.error("Failed to trigger n8n email:", err));
+      try {
+        await triggerN8nEmail({
+          driverName: driver.name,
+          userName: punchRecord.clientUser.name,
+          userEmail: punchRecord.clientUser.email,
+          vehicleNumber: punchRecord.vehicle.vehicleNumber,
+          odometer: punchRecord.odometer,
+        });
+      } catch (err) {
+        console.error("Failed to trigger n8n email:", err);
+      }
     }
 
     return NextResponse.json({ punchRecord });

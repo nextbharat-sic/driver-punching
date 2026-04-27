@@ -29,3 +29,25 @@ export async function triggerN8nEmail(data: {
     console.error("Error triggering n8n webhook:", error);
   }
 }
+
+export async function notifyAdminNewDriver(data: {
+  name: string;
+  phone: string;
+}) {
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  try {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        timestamp: new Date().toISOString(),
+        event: "NEW_DRIVER_REGISTRATION",
+      }),
+    });
+  } catch (error) {
+    console.error("Error notifying admin:", error);
+  }
+}

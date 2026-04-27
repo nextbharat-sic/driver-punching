@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { notifyAdminNewDriver } from "@/lib/n8n";
+
 export async function POST(request: Request) {
   const { name, phone, deviceId } = await request.json();
 
@@ -33,10 +35,17 @@ export async function POST(request: Request) {
         });
       }
     } else {
-      // Create new driver and bind deviceId immediately
+      // Create new driver and bind deviceId immediately, set isVerified: false
       driver = await prisma.driver.create({
-        data: { name, phone, deviceId, isVerified: true },
+        data: { name, phone, deviceId, isVerified: false },
       });
+
+      // Notify admin about new registration
+      try {
+        await notifyAdminNewDriver({ name, phone });
+      } catch (err) {
+        console.error("Failed to notify admin:", err);
+      }
     }
 
     const cookieStore = await cookies();
