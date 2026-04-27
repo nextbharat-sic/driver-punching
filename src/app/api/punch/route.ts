@@ -72,6 +72,43 @@ export async function POST(request: Request) {
       },
     });
 
+    // Handle automated calculations for Shift End
+    let totalKms = 0;
+    let totalHrs = "0";
+    let startOdo = 0;
+    let startTime = "";
+    let endOdo = 0;
+    let endTime = "";
+
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const currentIst = new Date(new Date().getTime() + istOffset).toISOString().split('T')[1].slice(0, 5);
+
+    if (type === "IN") {
+      startOdo = parseFloat(odometer);
+      startTime = currentIst;
+    } else {
+      const startRecord = await prisma.punchRecord.findFirst({
+        where: { 
+          driverId, 
+          type: "IN",
+          vehicleId: vehicleId || null 
+        },
+        orderBy: { timestamp: "desc" }
+      });
+
+      if (startRecord) {
+        startOdo = startRecord.odometer;
+        startTime = new Date(new Date(startRecord.timestamp).getTime() + istOffset).toISOString().split('T')[1].slice(0, 5);
+        
+        endOdo = parseFloat(odometer);
+        endTime = currentIst;
+        
+        totalKms = endOdo - startOdo;
+        const durationMs = new Date().getTime() - new Date(startRecord.timestamp).getTime();
+        totalHrs = (durationMs / (1000 * 60 * 60)).toFixed(2);
+      }
+    }
+
     // Trigger n8n for both shift start and shift end
     if (punchRecord.clientUser && punchRecord.vehicle) {
       try {
@@ -83,6 +120,12 @@ export async function POST(request: Request) {
           vehicleNumber: punchRecord.vehicle.vehicleNumber,
           odometer: punchRecord.odometer,
           event: type === "IN" ? "SHIFT_STARTED" : "SHIFT_ENDED",
+          totalKms: type === "OUT" ? totalKms : undefined,
+          totalHrs: type === "OUT" ? totalHrs : undefined,
+          startOdo,
+          startTime,
+          endOdo: type === "OUT" ? endOdo : undefined,
+          endTime: type === "OUT" ? endTime : undefined,
         });
       } catch (err) {
         console.error("Failed to trigger n8n:", err);

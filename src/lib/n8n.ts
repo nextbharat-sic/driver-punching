@@ -6,6 +6,12 @@ export async function triggerN8nEmail(data: {
   vehicleNumber: string;
   odometer: number;
   event: "SHIFT_STARTED" | "SHIFT_ENDED";
+  totalKms?: number;
+  totalHrs?: string;
+  startOdo?: number;
+  startTime?: string;
+  endOdo?: number;
+  endTime?: string;
 }) {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   if (!webhookUrl) {
