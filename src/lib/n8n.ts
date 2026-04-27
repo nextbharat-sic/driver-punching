@@ -14,12 +14,23 @@ export async function triggerN8nEmail(data: {
   }
 
   try {
+    // Calculate IST (UTC + 5:30)
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istDateObj = new Date(now.getTime() + istOffset);
+    
+    const istDate = istDateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+    const istTime = istDateObj.getUTCHours().toString().padStart(2, '0') + ":" + 
+                    istDateObj.getUTCMinutes().toString().padStart(2, '0');
+
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...data,
-        timestamp: new Date().toISOString(),
+        istDate,
+        istTime,
+        timestamp: now.toISOString(),
       }),
     });
 
