@@ -72,18 +72,20 @@ export async function POST(request: Request) {
       },
     });
 
-    // Trigger n8n email for shift start
-    if (type === "IN" && punchRecord.clientUser && punchRecord.vehicle) {
+    // Trigger n8n for both shift start and shift end
+    if (punchRecord.clientUser && punchRecord.vehicle) {
       try {
         await triggerN8nEmail({
           driverName: driver.name,
+          driverPhone: driver.phone,
           userName: punchRecord.clientUser.name,
           userEmail: punchRecord.clientUser.email,
           vehicleNumber: punchRecord.vehicle.vehicleNumber,
           odometer: punchRecord.odometer,
+          event: type === "IN" ? "SHIFT_STARTED" : "SHIFT_ENDED",
         });
       } catch (err) {
-        console.error("Failed to trigger n8n email:", err);
+        console.error("Failed to trigger n8n:", err);
       }
     }
 
