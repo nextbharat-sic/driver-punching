@@ -55,6 +55,8 @@ export async function POST(request: Request) {
     let endOdo = 0;
     let endTime = "";
     let rideId = "";
+    let finalClientUserId = clientUserId;
+    let finalVehicleId = vehicleId;
 
     const istOffset = 5.5 * 60 * 60 * 1000;
     const currentIst = new Date(new Date().getTime() + istOffset).toISOString().split('T')[1].slice(0, 5);
@@ -67,8 +69,7 @@ export async function POST(request: Request) {
       const startRecord = await prisma.punchRecord.findFirst({
         where: { 
           driverId, 
-          type: "IN",
-          vehicleId: vehicleId || null 
+          type: "IN"
         },
         orderBy: { timestamp: "desc" }
       });
@@ -77,6 +78,10 @@ export async function POST(request: Request) {
         startOdo = startRecord.odometer;
         startTime = new Date(new Date(startRecord.timestamp).getTime() + istOffset).toISOString().split('T')[1].slice(0, 5);
         rideId = startRecord.rideId || "";
+        
+        // Inherit clientUserId and vehicleId from the start record if not provided
+        finalClientUserId = clientUserId || startRecord.clientUserId;
+        finalVehicleId = vehicleId || startRecord.vehicleId;
         
         endOdo = parseFloat(odometer);
         endTime = currentIst;
@@ -92,8 +97,8 @@ export async function POST(request: Request) {
       data: {
         driverId,
         rideId,
-        clientUserId: clientUserId || null,
-        vehicleId: vehicleId || null,
+        clientUserId: finalClientUserId || null,
+        vehicleId: finalVehicleId || null,
         type,
         odometer: parseFloat(odometer),
         latitude,
