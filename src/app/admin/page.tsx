@@ -34,6 +34,7 @@ type Record = {
   type: string;
   odometer: number;
   timestamp: string;
+  status: string;
 };
 
 export default function AdminDashboard() {
@@ -196,10 +197,11 @@ export default function AdminDashboard() {
 
       <main className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
           {[
             { label: "Total Drivers", value: drivers.length, icon: "👤" },
             { label: "Active Shifts", value: drivers.filter(d => d.status === "ACTIVE").length, icon: "⚡" },
+            { label: "Pending Rides", value: records.filter(r => r.status === "PENDING").length, icon: "⏳" },
             { label: "Total Users", value: users.length, icon: "🏢" },
             { label: "Fleet Size", value: vehicles.length, icon: "🚛" },
           ].map((stat, i) => (
@@ -415,6 +417,7 @@ export default function AdminDashboard() {
                       <th className="px-4 py-4">Client</th>
                       <th className="px-4 py-4">Unit</th>
                       <th className="px-4 py-4">Event</th>
+                      <th className="px-4 py-4">Status</th>
                       <th className="px-4 py-4 text-right">Gauge</th>
                     </tr>
                   </thead>
@@ -437,6 +440,27 @@ export default function AdminDashboard() {
                           }`}>
                             {r.type === "IN" ? "Start" : "End"}
                           </span>
+                        </td>
+                        <td className="px-4 py-5">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                              r.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-100' :
+                              r.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                              r.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-100' :
+                              r.status === 'VERIFIED' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                              'bg-gray-50 text-gray-700 border-gray-100'
+                            }`}>
+                              {r.status}
+                            </span>
+                            {r.status === 'PENDING' && (
+                              <button 
+                                onClick={() => window.open(`/verify/${r.id}`, '_blank')}
+                                className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:underline"
+                              >
+                                Review
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-5 text-right font-mono font-black text-gray-900">{r.odometer}</td>
                       </tr>
