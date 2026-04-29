@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     }
 
     // Geo-fencing check for Start (Punch In)
+    let isOutOfBounds = false;
     if (type === "IN") {
       const depotLat = parseFloat(process.env.DEPOT_LAT || "28.6139");
       const depotLng = parseFloat(process.env.DEPOT_LNG || "77.209");
@@ -40,10 +41,7 @@ export async function POST(request: Request) {
       const distance = calculateDistance(latitude, longitude, depotLat, depotLng);
 
       if (distance > radius) {
-        return NextResponse.json(
-          { error: `Too far from depot (${Math.round(distance)}m). You must be within ${radius}m.` },
-          { status: 403 }
-        );
+        isOutOfBounds = true;
       }
     }
 
@@ -103,6 +101,7 @@ export async function POST(request: Request) {
         odometer: parseFloat(odometer),
         latitude,
         longitude,
+        status: isOutOfBounds ? "PENDING" : "APPROVED",
       },
       include: {
         clientUser: true,
@@ -121,6 +120,7 @@ export async function POST(request: Request) {
     // Trigger n8n for both shift start and shift end
     if (punchRecord.clientUser && punchRecord.vehicle) {
       try {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         await triggerN8nEmail({
           driverName: driver.name,
           driverPhone: driver.phone,
@@ -136,6 +136,11 @@ export async function POST(request: Request) {
           endOdo: type === "OUT" ? endOdo : undefined,
           endTime: type === "OUT" ? endTime : undefined,
           rideId,
+          lat: latitude,
+          lng: longitude,
+          status: punchRecord.status,
+          isOutOfBounds,
+          verificationUrl: `${appUrl}/verify/${punchRecord.id}`,
         });
       } catch (err) {
         console.error("Failed to trigger n8n:", err);

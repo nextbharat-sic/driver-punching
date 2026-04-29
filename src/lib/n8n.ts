@@ -12,7 +12,7 @@ export async function triggerN8nEmail(data: {
   userEmail: string;
   vehicleNumber: string;
   odometer: number;
-  event: "SHIFT_STARTED" | "SHIFT_ENDED";
+  event: "SHIFT_STARTED" | "SHIFT_ENDED" | "VERIFIED" | "REJECTED";
   totalKms?: number;
   totalHrs?: string;
   startOdo?: number;
@@ -20,6 +20,11 @@ export async function triggerN8nEmail(data: {
   endOdo?: number;
   endTime?: string;
   rideId?: string;
+  lat?: number;
+  lng?: number;
+  status?: string;
+  isOutOfBounds?: boolean;
+  verificationUrl?: string;
 }) {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   if (!webhookUrl) {
