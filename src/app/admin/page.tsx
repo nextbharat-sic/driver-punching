@@ -35,6 +35,19 @@ type Record = {
   odometer: number;
   timestamp: string;
   status: string;
+  rideId: string;
+};
+
+type Ride = {
+  rideId: string;
+  driver: Driver;
+  clientUser: ClientUser | null;
+  vehicle: Vehicle | null;
+  startRecord: Record;
+  endRecord?: Record;
+  totalKms?: number;
+  totalHrs?: string;
+  status: string;
 };
 
 export default function AdminDashboard() {
@@ -45,6 +58,10 @@ export default function AdminDashboard() {
   const [records, setRecords] = useState<Record[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Filters
+  const [filterDriver, setFilterDriver] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   // Form states
   const [newUserName, setNewUserName] = useState("");
@@ -85,6 +102,47 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const getRides = (): Ride[] => {
+    const rideMap = new Map<string, Ride>();
+
+    // Process IN records first to establish rides
+    records.filter(r => r.type === "IN").forEach(r => {
+      rideMap.set(r.rideId, {
+        rideId: r.rideId,
+        driver: r.driver,
+        clientUser: r.clientUser,
+        vehicle: r.vehicle,
+        startRecord: r,
+        status: r.status
+      });
+    });
+
+    // Match OUT records
+    records.filter(r => r.type === "OUT").forEach(r => {
+      const ride = rideMap.get(r.rideId);
+      if (ride) {
+        ride.endRecord = r;
+        ride.totalKms = r.odometer - ride.startRecord.odometer;
+        const durationMs = new Date(r.timestamp).getTime() - new Date(ride.startRecord.timestamp).getTime();
+        ride.totalHrs = (durationMs / (1000 * 60 * 60)).toFixed(2);
+      }
+    });
+
+    let rides = Array.from(rideMap.values()).sort((a, b) => 
+      new Date(b.startRecord.timestamp).getTime() - new Date(a.startRecord.timestamp).getTime()
+    );
+
+    // Apply filters
+    if (filterDriver) {
+      rides = rides.filter(r => r.driver.id === filterDriver);
+    }
+    if (filterStatus) {
+      rides = rides.filter(r => r.status === filterStatus);
+    }
+
+    return rides;
+  };
 
   const toggleVerify = async (id: string, current: boolean) => {
     await fetch("/api/admin/drivers", {
@@ -225,7 +283,7 @@ export default function AdminDashboard() {
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                {tab}
+                {tab === "records" ? "Rides" : tab}
                 {activeTab === tab && (
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-black rounded-t-full animate-in slide-in-from-bottom-1"></div>
                 )}
@@ -408,65 +466,124 @@ export default function AdminDashboard() {
             )}
 
             {activeTab === "records" && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50">
-                      <th className="px-4 py-4">Timestamp</th>
-                      <th className="px-4 py-4">Driver</th>
-                      <th className="px-4 py-4">Client</th>
-                      <th className="px-4 py-4">Unit</th>
-                      <th className="px-4 py-4">Event</th>
-                      <th className="px-4 py-4">Status</th>
-                      <th className="px-4 py-4 text-right">Gauge</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {records.map((r) => (
-                      <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-5 text-[10px] font-bold text-gray-400">
-                          {new Date(r.timestamp).toLocaleDateString()}
-                          <br />
-                          <span className="text-gray-900">{new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </td>
-                        <td className="px-4 py-5 font-bold text-gray-900">{r.driver.name}</td>
-                        <td className="px-4 py-5 text-sm text-gray-600 font-medium">{r.clientUser?.name || "-"}</td>
-                        <td className="px-4 py-5 font-mono text-sm text-gray-600">{r.vehicle?.vehicleNumber || "-"}</td>
-                        <td className="px-4 py-5">
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
-                            r.type === "IN" 
-                              ? "bg-blue-50 text-blue-700 border-blue-100" 
-                              : "bg-orange-50 text-orange-700 border-orange-100"
-                          }`}>
-                            {r.type === "IN" ? "Start" : "End"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-5">
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
-                              r.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-100' :
-                              r.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
-                              r.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-100' :
-                              r.status === 'VERIFIED' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                              'bg-gray-50 text-gray-700 border-gray-100'
-                            }`}>
-                              {r.status}
-                            </span>
-                            {r.status === 'PENDING' && (
-                              <button 
-                                onClick={() => window.open(`/verify/${r.id}`, '_blank')}
-                                className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:underline"
-                              >
-                                Review
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-5 text-right font-mono font-black text-gray-900">{r.odometer}</td>
+              <div className="space-y-6">
+                {/* Filters */}
+                <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-xl">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1 block">Filter Driver</label>
+                    <select 
+                      value={filterDriver} 
+                      onChange={(e) => setFilterDriver(e.target.value)}
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/5"
+                    >
+                      <option value="">All Drivers</option>
+                      {drivers.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1 block">Filter Status</label>
+                    <select 
+                      value={filterStatus} 
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/5"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="APPROVED">Approved</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="VERIFIED">Verified</option>
+                      <option value="REJECTED">Rejected</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <button 
+                      onClick={() => { setFilterDriver(""); setFilterStatus(""); }}
+                      className="text-[10px] font-black uppercase text-gray-400 hover:text-black tracking-widest px-4 py-2"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50">
+                        <th className="px-4 py-4">Start Time</th>
+                        <th className="px-4 py-4">End Time</th>
+                        <th className="px-4 py-4">Driver & Client</th>
+                        <th className="px-4 py-4">Unit</th>
+                        <th className="px-4 py-4">Odometer (S/E)</th>
+                        <th className="px-4 py-4">Total</th>
+                        <th className="px-4 py-4">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {getRides().map((ride) => (
+                        <tr key={ride.rideId} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-4 py-5">
+                            <div className="text-[10px] font-bold text-gray-400">
+                              {new Date(ride.startRecord.timestamp).toLocaleDateString()}
+                            </div>
+                            <div className="text-gray-900 font-bold">
+                              {new Date(ride.startRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </td>
+                          <td className="px-4 py-5">
+                            {ride.endRecord ? (
+                              <>
+                                <div className="text-[10px] font-bold text-gray-400">
+                                  {new Date(ride.endRecord.timestamp).toLocaleDateString()}
+                                </div>
+                                <div className="text-gray-900 font-bold">
+                                  {new Date(ride.endRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-[9px] font-black text-blue-500 uppercase animate-pulse">Ongoing</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-5">
+                            <div className="font-bold text-gray-900">{ride.driver.name}</div>
+                            <div className="text-xs text-gray-500">{ride.clientUser?.name || "-"}</div>
+                          </td>
+                          <td className="px-4 py-5 font-mono text-sm text-gray-600">
+                            {ride.vehicle?.vehicleNumber || "-"}
+                          </td>
+                          <td className="px-4 py-5 font-mono text-sm text-gray-600">
+                            {ride.startRecord.odometer} → {ride.endRecord?.odometer || "..."}
+                          </td>
+                          <td className="px-4 py-5">
+                            <div className="font-black text-gray-900">{ride.totalKms !== undefined ? `${ride.totalKms} km` : "-"}</div>
+                            <div className="text-[10px] text-gray-400">{ride.totalHrs ? `${ride.totalHrs} hrs` : ""}</div>
+                          </td>
+                          <td className="px-4 py-5">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
+                                ride.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-100' :
+                                ride.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                                ride.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-100' :
+                                ride.status === 'VERIFIED' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                'bg-gray-50 text-gray-700 border-gray-100'
+                              }`}>
+                                {ride.status}
+                              </span>
+                              {ride.status === 'PENDING' && (
+                                <button 
+                                  onClick={() => window.open(`/verify/${ride.startRecord.id}`, '_blank')}
+                                  className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:underline"
+                                >
+                                  Review
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
@@ -475,3 +592,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
