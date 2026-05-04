@@ -33,6 +33,8 @@ type Record = {
   vehicle: Vehicle | null;
   type: string;
   odometer: number;
+  latitude: number;
+  longitude: number;
   timestamp: string;
   status: string;
   rideId: string;
@@ -468,13 +470,13 @@ export default function AdminDashboard() {
             {activeTab === "records" && (
               <div className="space-y-6">
                 {/* Filters */}
-                <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1 block">Filter Driver</label>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-xl border border-gray-100">
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2 block">Filter Driver</label>
                     <select 
                       value={filterDriver} 
                       onChange={(e) => setFilterDriver(e.target.value)}
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/5"
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all hover:border-gray-300"
                     >
                       <option value="">All Drivers</option>
                       {drivers.map(d => (
@@ -482,107 +484,272 @@ export default function AdminDashboard() {
                       ))}
                     </select>
                   </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-1 block">Filter Status</label>
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2 block">Filter Status</label>
                     <select 
                       value={filterStatus} 
                       onChange={(e) => setFilterStatus(e.target.value)}
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/5"
+                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all hover:border-gray-300"
                     >
                       <option value="">All Statuses</option>
-                      <option value="APPROVED">Approved</option>
-                      <option value="PENDING">Pending</option>
-                      <option value="VERIFIED">Verified</option>
-                      <option value="REJECTED">Rejected</option>
+                      <option value="APPROVED">✓ Approved</option>
+                      <option value="PENDING">⏳ Pending</option>
+                      <option value="VERIFIED">✔ Verified</option>
+                      <option value="REJECTED">✗ Rejected</option>
                     </select>
                   </div>
-                  <div className="flex items-end">
+                  <div className="md:col-span-2">
+                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2 block">&nbsp;</label>
                     <button 
                       onClick={() => { setFilterDriver(""); setFilterStatus(""); }}
-                      className="text-[10px] font-black uppercase text-gray-400 hover:text-black tracking-widest px-4 py-2"
+                      className="w-full text-[10px] font-black uppercase text-gray-600 hover:text-black hover:bg-white bg-gray-100 rounded-lg px-4 py-2.5 transition-all border border-transparent hover:border-gray-200 tracking-widest"
                     >
-                      Reset
+                      Reset All
                     </button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50">
-                        <th className="px-4 py-4">Start Time</th>
-                        <th className="px-4 py-4">End Time</th>
-                        <th className="px-4 py-4">Driver & Client</th>
-                        <th className="px-4 py-4">Unit</th>
-                        <th className="px-4 py-4">Odometer (S/E)</th>
-                        <th className="px-4 py-4">Total</th>
-                        <th className="px-4 py-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {getRides().map((ride) => (
-                        <tr key={ride.rideId} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-4 py-5">
-                            <div className="text-[10px] font-bold text-gray-400">
-                              {new Date(ride.startRecord.timestamp).toLocaleDateString()}
-                            </div>
-                            <div className="text-gray-900 font-bold">
-                              {new Date(ride.startRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          </td>
-                          <td className="px-4 py-5">
-                            {ride.endRecord ? (
-                              <>
-                                <div className="text-[10px] font-bold text-gray-400">
-                                  {new Date(ride.endRecord.timestamp).toLocaleDateString()}
+                {/* Rides Count */}
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                    {getRides().length} Ride{getRides().length !== 1 ? 's' : ''} Found
+                  </p>
+                </div>
+
+                {/* Table - Desktop View */}
+                {getRides().length > 0 ? (
+                  <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-100">
+                    <table className="w-full text-left bg-white">
+                      <thead>
+                        <tr className="text-[9px] font-black uppercase text-gray-500 tracking-widest border-b border-gray-100 bg-gray-50/50">
+                          <th className="px-5 py-4 w-1/7">Start Time</th>
+                          <th className="px-5 py-4 w-1/7">End Time</th>
+                          <th className="px-5 py-4 w-1/7">Operator</th>
+                          <th className="px-5 py-4 w-1/7">Distance</th>
+                          <th className="px-5 py-4 w-1/7">Details</th>
+                          <th className="px-5 py-4 w-1/7">Status</th>
+                          <th className="px-5 py-4 w-1/7 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {getRides().map((ride) => (
+                          <tr key={ride.rideId} className="group hover:bg-blue-50/30 transition-colors duration-200">
+                            {/* Start Time Column */}
+                            <td className="px-5 py-4 w-1/7">
+                              <div className="space-y-1">
+                                <div className="text-sm font-bold text-gray-900">
+                                  {new Date(ride.startRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
-                                <div className="text-gray-900 font-bold">
-                                  {new Date(ride.endRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <div className="text-[9px] text-gray-400">{new Date(ride.startRecord.timestamp).toLocaleDateString()}</div>
+                              </div>
+                            </td>
+
+                            {/* End Time Column */}
+                            <td className="px-5 py-4 w-1/7">
+                              {ride.endRecord ? (
+                                <div className="space-y-1">
+                                  <div className="text-sm font-bold text-gray-900">
+                                    {new Date(ride.endRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                  <div className="text-[9px] text-gray-400">{new Date(ride.endRecord.timestamp).toLocaleDateString()}</div>
                                 </div>
-                              </>
-                            ) : (
-                              <span className="text-[9px] font-black text-blue-500 uppercase animate-pulse">Ongoing</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-5">
-                            <div className="font-bold text-gray-900">{ride.driver.name}</div>
-                            <div className="text-xs text-gray-500">{ride.clientUser?.name || "-"}</div>
-                          </td>
-                          <td className="px-4 py-5 font-mono text-sm text-gray-600">
-                            {ride.vehicle?.vehicleNumber || "-"}
-                          </td>
-                          <td className="px-4 py-5 font-mono text-sm text-gray-600">
-                            {ride.startRecord.odometer} → {ride.endRecord?.odometer || "..."}
-                          </td>
-                          <td className="px-4 py-5">
-                            <div className="font-black text-gray-900">{ride.totalKms !== undefined ? `${ride.totalKms} km` : "-"}</div>
-                            <div className="text-[10px] text-gray-400">{ride.totalHrs ? `${ride.totalHrs} hrs` : ""}</div>
-                          </td>
-                          <td className="px-4 py-5">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
-                                ride.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-100' :
-                                ride.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
-                                ride.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-100' :
-                                ride.status === 'VERIFIED' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                'bg-gray-50 text-gray-700 border-gray-100'
+                              ) : (
+                                <div className="text-xs font-black text-blue-500 uppercase animate-pulse">● Ongoing</div>
+                              )}
+                            </td>
+
+                            {/* Operator Column */}
+                            <td className="px-5 py-4 w-1/7">
+                              <div className="space-y-1">
+                                <div className="font-bold text-gray-900 text-sm">{ride.driver.name}</div>
+                                <div className="text-xs text-gray-500">{ride.clientUser?.name || '—'}</div>
+                                <div className="text-[9px] font-mono text-gray-400 mt-1">{ride.vehicle?.vehicleNumber || '—'}</div>
+                              </div>
+                            </td>
+
+                            {/* Distance Column */}
+                            <td className="px-5 py-4 w-1/7">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xl">📍</span>
+                                  <span className="font-black text-lg text-gray-900">{ride.totalKms !== undefined ? `${ride.totalKms}` : '-'}</span>
+                                </div>
+                                <div className="text-[9px] text-gray-500">km</div>
+                                {ride.totalHrs && (
+                                  <div className="text-[10px] text-gray-500">⏱ {ride.totalHrs} hrs</div>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Details Column */}
+                            <td className="px-5 py-4 w-1/7">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[9px] font-bold text-gray-400 uppercase">Odometer</span>
+                                </div>
+                                <div className="font-mono text-sm text-gray-700 font-bold">{ride.startRecord.odometer} → {ride.endRecord?.odometer || '...'}</div>
+                              </div>
+                            </td>
+
+                            {/* Status Column */}
+                            <td className="px-5 py-4 w-1/7">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${
+                                ride.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200 group-hover:bg-green-100' :
+                                ride.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 border-yellow-200 group-hover:bg-yellow-100 animate-pulse' :
+                                ride.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200 group-hover:bg-red-100' :
+                                ride.status === 'VERIFIED' ? 'bg-blue-50 text-blue-700 border-blue-200 group-hover:bg-blue-100' :
+                                'bg-gray-50 text-gray-700 border-gray-200 group-hover:bg-gray-100'
                               }`}>
+                                <span className="text-sm">
+                                  {ride.status === 'APPROVED' ? '✓' :
+                                   ride.status === 'PENDING' ? '⏳' :
+                                   ride.status === 'REJECTED' ? '✗' :
+                                   ride.status === 'VERIFIED' ? '✔' : '○'}
+                                </span>
                                 {ride.status}
                               </span>
-                              {ride.status === 'PENDING' && (
-                                <button 
-                                  onClick={() => window.open(`/verify/${ride.startRecord.id}`, '_blank')}
-                                  className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:underline"
+                            </td>
+
+                            {/* Actions Column */}
+                            <td className="px-5 py-4 w-1/7">
+                              <div className="flex items-center justify-center gap-2">
+                                <a 
+                                  href={`https://www.google.com/maps/search/?api=1&query=${ride.startRecord.latitude},${ride.startRecord.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-[9px] font-black uppercase tracking-widest transition-all border border-blue-100 hover:border-blue-200"
+                                  title="View start location on Google Maps"
                                 >
-                                  Review
-                                </button>
+                                  📍 Map
+                                </a>
+                                {(ride.status === 'PENDING' || ride.status === 'REJECTED') && (
+                                  <button 
+                                    onClick={() => window.open(`/verify/${ride.startRecord.id}`, '_blank')}
+                                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${
+                                      ride.status === 'REJECTED' 
+                                        ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-100 hover:border-red-200'
+                                        : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-100 hover:border-green-200'
+                                    }`}
+                                    title={ride.status === 'REJECTED' ? 'View rejection reason' : 'Review and make decision'}
+                                  >
+                                    {ride.status === 'REJECTED' ? '📋 Details' : '🔍 Review'}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-2">🚗</div>
+                    <p className="text-sm text-gray-500 font-medium">No rides found matching your filters</p>
+                  </div>
+                )}
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                  {getRides().length > 0 ? (
+                    getRides().map((ride) => (
+                      <Card key={ride.rideId} variant="elevated" className="overflow-hidden">
+                        <div className="p-4 space-y-4">
+                          {/* Header */}
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1 flex-1">
+                              <h3 className="font-bold text-gray-900">{ride.driver.name}</h3>
+                              <p className="text-xs text-gray-500">{ride.clientUser?.name || '—'}</p>
+                            </div>
+                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                              ride.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200' :
+                              ride.status === 'PENDING' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                              ride.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
+                              ride.status === 'VERIFIED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              'bg-gray-50 text-gray-700 border-gray-200'
+                            }`}>
+                              {ride.status}
+                            </span>
+                          </div>
+
+                          {/* Timeline */}
+                          <div className="grid grid-cols-2 gap-3 py-3 border-t border-b border-gray-100">
+                            <div>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Start</p>
+                              <p className="text-sm font-bold text-gray-900">
+                                {new Date(ride.startRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                              <p className="text-[9px] text-gray-400">{new Date(ride.startRecord.timestamp).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">End</p>
+                              {ride.endRecord ? (
+                                <>
+                                  <p className="text-sm font-bold text-gray-900">
+                                    {new Date(ride.endRecord.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                  <p className="text-[9px] text-gray-400">{new Date(ride.endRecord.timestamp).toLocaleDateString()}</p>
+                                </>
+                              ) : (
+                                <p className="text-xs font-black text-blue-500 uppercase">● Ongoing</p>
                               )}
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+
+                          {/* Details */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-gray-400 uppercase">Vehicle</span>
+                              <span className="font-mono text-sm text-gray-700 font-bold">{ride.vehicle?.vehicleNumber || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-gray-400 uppercase">Odometer</span>
+                              <span className="font-mono text-sm text-gray-700">{ride.startRecord.odometer} → {ride.endRecord?.odometer || '...'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-gray-400 uppercase">Distance</span>
+                              <span className="font-black text-lg text-gray-900">{ride.totalKms !== undefined ? `${ride.totalKms} km` : '—'}</span>
+                            </div>
+                            {ride.totalHrs && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-bold text-gray-400 uppercase">Duration</span>
+                                <span className="text-sm text-gray-700 font-bold">{ride.totalHrs} hrs</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 pt-3 border-t border-gray-100">
+                            <a 
+                              href={`https://www.google.com/maps/search/?api=1&query=${ride.startRecord.latitude},${ride.startRecord.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-[9px] font-black uppercase tracking-widest transition-all border border-blue-100"
+                            >
+                              📍 Map
+                            </a>
+                            {(ride.status === 'PENDING' || ride.status === 'REJECTED') && (
+                              <button 
+                                onClick={() => window.open(`/verify/${ride.startRecord.id}`, '_blank')}
+                                className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${
+                                  ride.status === 'REJECTED'
+                                    ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-100'
+                                    : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-100'
+                                }`}
+                              >
+                                {ride.status === 'REJECTED' ? '📋 Details' : '🔍 Review'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-2">🚗</div>
+                      <p className="text-sm text-gray-500 font-medium">No rides found</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
